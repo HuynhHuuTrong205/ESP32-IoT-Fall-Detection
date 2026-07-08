@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Y Tế Giám Sát Sức Khỏe</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: #f4f7f6; color: #333; padding: 20px; min-height: 100vh; }
+        .header-title { text-align: center; margin-bottom: 25px; color: #2c3e50; text-transform: uppercase; border-bottom: 2px solid #dce4ec; padding-bottom: 10px; font-weight: 800; }
+        
+        .dashboard-container { display: grid; grid-template-columns: 1fr 2.2fr 1fr; gap: 20px; }
+        .panel { background-color: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); min-height: 480px; border-top: 4px solid #3498db; }
+        .panel-title { font-size: 16pt; color: #2980b9; margin-bottom: 20px; text-align: center; border-bottom: 1px solid #ecf0f1; padding-bottom: 8px; font-weight: bold; }
+
+        .info-item { margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #3498db; }
+        .info-label { font-size: 9pt; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; font-weight: bold; }
+        .info-value { font-size: 12pt; font-weight: bold; color: #2c3e50; }
+        #clock { font-family: monospace; font-size: 14pt; color: #e67e22; }
+
+        .mid-layout { display: flex; flex-direction: column; gap: 20px; }
+        .sensors-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .sensor-card { background: #f8fafc; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #e2e8f0; }
+        .sensor-icon { font-size: 24pt; margin-bottom: 8px; }
+        .sensor-name { font-size: 11pt; color: #7f8c8d; font-weight: bold; }
+        .sensor-data { font-size: 18pt; font-weight: bold; color: #2c3e50; margin-top: 5px;}
+        .chart-container { background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; height: 320px; }
+
+        .led-group { display: flex; flex-direction: column; gap: 25px; align-items: center; justify-content: center; margin-top: 30px; }
+        .led-item { text-align: center; width: 100%; padding: 15px; }
+        .led-label { font-size: 12pt; font-weight: bold; margin-bottom: 10px; color: #34495e; }
+        .led-circle { width: 50px; height: 50px; border-radius: 50%; margin: 0 auto; background-color: #ecf0f1; border: 2px solid #bdc3c7; transition: all 0.3s ease; }
+        
+        .led-xanh.active { background-color: #3498db; box-shadow: 0 0 25px #3498db, inset 0 0 15px #fff; border-color: #2980b9; }
+        .led-vang.active { background-color: #f1c40f; box-shadow: 0 0 25px #f1c40f, inset 0 0 15px #fff; border-color: #f39c12; }
+        .led-do.active { background-color: #e74c3c; box-shadow: 0 0 30px #e74c3c, inset 0 0 15px #fff; border-color: #c0392b; animation: blink 1s infinite; }
+        
+        @keyframes blink { 50% { opacity: 0.5; box-shadow: none; } }
+        @media (max-width: 900px) { .dashboard-container { grid-template-columns: 1fr; } .panel { min-height: auto; } }
+    </style>
+</head>
+<body>
+
+    <h1 class="header-title">Hệ Thống Y Tế Giám Sát Sức Khỏe & Báo Động Té Ngã</h1>
+
+    <div class="dashboard-container">
+        
+        <div class="panel">
+            <div class="panel-title">Thông Tin Đồ Án</div>
+            <div class="info-item">
+                <div class="info-label">Cập nhật lúc</div>
+                <div class="info-value" id="clock">00:00:00</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Đơn vị đào tạo</div>
+                <div class="info-value">ĐH Sư phạm Kỹ thuật TP.HCM</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Sinh viên thực hiện 1</div>
+                <div class="info-value">Lê Duy Trọng <br><span style="font-size:10pt; font-weight:normal;">MSSV: 23161204</span></div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Sinh viên thực hiện 2</div>
+                <div class="info-value">Huỳnh Hữu Trọng <br><span style="font-size:10pt; font-weight:normal;">MSSV: 23161203</span></div>
+            </div>
+        </div>
+
+        <div class="panel mid-layout">
+            <div class="panel-title">Chỉ Số Cơ Thể</div>
+            <div class="sensors-row">
+                <div class="sensor-card">
+                    <div class="sensor-icon">🤒</div>
+                    <div class="sensor-name">Thân Nhiệt</div>
+                    <div class="sensor-data" id="txt-nhiet-do">-- °C</div>
+                </div>
+                <div class="sensor-card">
+                    <div class="sensor-icon">📐</div>
+                    <div class="sensor-name">Gia Tốc Trục X</div>
+                    <div class="sensor-data" id="txt-accel-x">--</div>
+                </div>
+                <div class="sensor-card">
+                    <div class="sensor-icon">⚖️</div>
+                    <div class="sensor-name">Gia Tốc Trục Y</div>
+                    <div class="sensor-data" id="txt-accel-y">--</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="healthChart"></canvas>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Trạng Thái Bệnh Nhân</div>
+            <div class="led-group">
+                <div class="led-item">
+                    <div class="led-label" id="lbl-xanh">Mức 1: Khỏe Mạnh, Ổn định</div>
+                    <div class="led-circle led-xanh" id="led-xanh"></div>
+                </div>
+                <div class="led-item">
+                    <div class="led-label" id="lbl-vang">Mức 2: Đang Sốt / Bất thường</div>
+                    <div class="led-circle led-vang" id="led-vang"></div>
+                </div>
+                <div class="led-item">
+                    <div class="led-label" id="lbl-do">Mức 3: CẢNH BÁO TÉ NGÃ!</div>
+                    <div class="led-circle led-do" id="led-do"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Hiển thị đồng hồ thời gian thực
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('vi-VN');
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        // Khởi tạo Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwsLlUCPER7u0oiYmSf2KvsbAhA7gfwFY",
+            authDomain: "doan-e8f08.firebaseapp.com",
+            databaseURL: "https://doan-e8f08-default-rtdb.firebaseio.com",
+            projectId: "doan-e8f08"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // --- TẠO MẢNG LƯU TRỮ DỮ LIỆU CŨ ---
+        const maxDataPoints = 10;
+        // Khởi tạo sẵn mảng 10 phần tử rỗng để biểu đồ hiển thị khung đẹp ngay từ đầu
+        let tempHistory = new Array(maxDataPoints).fill(null);
+        let timeHistory = new Array(maxDataPoints).fill('');
+
+        // Khởi tạo biểu đồ Chart.js
+        const ctx = document.getElementById('healthChart').getContext('2d');
+        const healthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timeHistory,
+                datasets: [{
+                    label: 'Biểu đồ Thân Nhiệt (°C)',
+                    data: tempHistory,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                    borderWidth: 3, tension: 0.4, fill: true,
+                    pointBackgroundColor: '#c0392b',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        // Dùng suggestedMin/Max để trục Y luôn hiển thị đẹp ở mức thân nhiệt con người
+                        // Kể cả khi chưa có dữ liệu, biểu đồ cũng không bị scale về mức 0 - 1.0
+                        suggestedMin: 35, 
+                        suggestedMax: 42,
+                        title: { display: true, text: 'Nhiệt Độ (°C)', font: {weight: 'bold'} }
+                    }
+                }
+            }
+        });
+
+        let currentTemp = null; // Biến lưu nhiệt độ mới nhất từ Firebase
+
+        // Bắt sự kiện Realtime từ Firebase (Chỉ cập nhật Text và lưu vào biến currentTemp)
+        database.ref('/cam_bien/nhiet_do_co_the').on('value', snap => {
+            if(snap.val() !== null) {
+                currentTemp = snap.val();
+                document.getElementById('txt-nhiet-do').innerText = currentTemp.toFixed(1) + " °C";
+            }
+        });
+
+        // --- HÀM CẬP NHẬT BIỂU ĐỒ THEO THỜI GIAN THỰC ---
+        function updateChartData() {
+            // Nếu Firebase chưa trả về dữ liệu nào thì chưa vẽ
+            if (currentTemp === null) return; 
+
+            const nowStr = new Date().toLocaleTimeString('vi-VN');
+
+            // Thuật toán mảng FIFO: Dịch chuyển dữ liệu cũ, chèn dữ liệu mới
+            timeHistory.shift();         // Xóa mốc thời gian cũ nhất
+            timeHistory.push(nowStr);    // Sắp xếp mốc thời gian mới nhất vào cuối
+
+            tempHistory.shift();         // Xóa nhiệt độ cũ nhất
+            tempHistory.push(currentTemp); // Thêm nhiệt độ mới nhất vào cuối
+
+            // Cập nhật lại biểu đồ
+            healthChart.update();
+        }
+
+        // ESP32 gửi dữ liệu mỗi 1.5 giây, web sẽ đồng bộ chèn dữ liệu vào mảng mỗi 1.5 giây
+// Cập nhật biểu đồ mỗi 30 giây (30000 ms)
+setInterval(updateChartData, 10000);
+
+        // Các hàm xử lý giao diện khác
+        function updateLed(mucDo) {
+            document.getElementById('led-xanh').classList.remove('active');
+            document.getElementById('led-vang').classList.remove('active');
+            document.getElementById('led-do').classList.remove('active');
+
+            if (mucDo === "binh_thuong") document.getElementById('led-xanh').classList.add('active');
+            else if (mucDo === "canh_bao") document.getElementById('led-vang').classList.add('active');
+            else if (mucDo === "bao_dong") document.getElementById('led-do').classList.add('active');
+        }
+
+        database.ref('/cam_bien/gia_toc_x').on('value', snap => {
+            if(snap.val() !== null) document.getElementById('txt-accel-x').innerText = snap.val().toFixed(2);
+        });
+
+        database.ref('/cam_bien/gia_toc_y').on('value', snap => {
+            if(snap.val() !== null) document.getElementById('txt-accel-y').innerText = snap.val().toFixed(2);
+        });
+
+        database.ref('/trang_thai/muc_do').on('value', snap => {
+            if(snap.val() !== null) updateLed(snap.val());
+        });
+    </script>
+</body>
+</html>
