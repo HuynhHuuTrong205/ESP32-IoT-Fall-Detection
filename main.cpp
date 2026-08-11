@@ -9,7 +9,7 @@
 
 // --- CẤU HÌNH FIREBASE ---
 #define FIREBASE_HOST "doan-e8f08-default-rtdb.firebaseio.com" 
-#define FIREBASE_AUTH "254LMFO7pfow1Q3AJIJccKWVHOtKJn2VMeMM22U2"
+#define FIREBASE_AUTH "NHAP_MA_BAO_MAT_CUA_BAN_VAO_DAY"
 
 #define WIFI_SSID "Wokwi-GUEST"
 #define WIFI_PASSWORD ""
