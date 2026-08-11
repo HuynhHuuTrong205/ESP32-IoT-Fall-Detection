@@ -2,7 +2,7 @@
 
 | Tên Linh Kiện | Chức năng trong hệ thống | Liên kết (Datasheet) |
 
-| :--- | :--- | :--- |
+| :--- | :--- | :--- | 
 
 | **ESP32 DevKit V1** | Vi điều khiển trung tâm xử lý dữ liệu và kết nối WiFi | [Xem Datasheet](https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf) |
 
