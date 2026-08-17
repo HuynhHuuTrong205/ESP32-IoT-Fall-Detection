@@ -11,5 +11,8 @@ Dự án ứng dụng ESP32, MPU6050 và DS18B20 để theo dõi thân nhiệt v
 # Sơ đồ nguyên lý mạch
 ![Sơ đồ nguyên lý](Images/Schematic.png)
 
+# Dashboard
+![Dashboard](images/Dashboard.png)
+
 
 
